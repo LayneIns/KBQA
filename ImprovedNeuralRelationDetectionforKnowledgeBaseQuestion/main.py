@@ -39,11 +39,11 @@ if __name__ == "__main__":
 	print "\nThere are", len(testing_data_conv), "in the testing data"
 	valid_data_conv = convert_data(question_words, relation_words, relation_list_seg, relation_list_seg_all, valid_data)
 	print "\nThere are", len(valid_data_conv), "in the valid data"
-	
+
 
 	print "\n"
 	print "Start to get word word embedding matrix"
-	word_embedding_matrix = question_words_embedding(question_words, "glove/glove.6B.300d.txt")
+	word_embedding_matrix = question_words_embedding(question_words, "../../glove/glove.6B.300d.txt")
 	# print word_embedding_matrix[0:3]
 	# print "\n"
 	# print word_embedding_matrix[-3:-1]
