@@ -1,3 +1,5 @@
+# -*- coding:utf-8 -*-
+
 import numpy as np 
 
 
@@ -15,105 +17,119 @@ class dataMgr():
 
 	def __init__(self, data, max_length_dict):
 		self.max_length_dict = max_length_dict
-		self.all_data = self.data_process(data, max_length_dict)
-		self.total_batch = len(self.all_data)
+		self.question_list, self.relation_seg_list, self.relation_seg_all_list, \
+			self.question_sequence_length_list, self.relation_seg_sequence_length_list, self.relation_seg_all_sequence_length_list, \
+			self.case_num_list = self.data_process(data, max_length_dict)
+		self.total_batch = len(self.question_list)
 		self.batch_cnt = 0
 	
 	def initialize_batch_cnt(self):
 		self.batch_cnt = 0
 
 	def next_batch(self):
-		if self.batch_cnt != self.total_batch:
-			one_batch = self.all_data[self.batch_cnt]
+		if self.batch_cnt <= self.total_batch - 10:
+			question = self.question_list[self.batch_cnt: self.batch_cnt+10]
+			
+			relation_seg = self.relation_seg_list[self.batch_cnt: self.batch_cnt+10]
+			relation_seg_all = self.relation_seg_all_list[self.batch_cnt: self.batch_cnt+10]
+			sequence_length_seg = self.relation_seg_sequence_length_list[self.batch_cnt: self.batch_cnt+10]
+			sequence_length_seg_all = self.relation_seg_all_sequence_length_list[self.batch_cnt: self.batch_cnt+10]
+			sequence_length_question = self.question_sequence_length_list[self.batch_cnt: self.batch_cnt+10]
 
-			relation_seg = []
-			relation_seg_all = []
-			question = []
-			sequence_length_seg = []
-			sequence_length_seg_all = []
-			sequence_length_question = []
-			label_sequence = []
+			question_matrix = self.build_calculate_matrix_for_question(self.case_num_list[self.batch_cnt: self.batch_cnt+10])
+			similarity_matrix = self.build_calculate_matrix_for_similarity(self.case_num_list[self.batch_cnt: self.batch_cnt+10])	
 
+			self.batch_cnt += 10
+		
+		else:
+			question = self.question_list[self.batch_cnt: ]
+			
+			relation_seg = self.relation_seg_list[self.batch_cnt: ]
+			relation_seg_all = self.relation_seg_all_list[self.batch_cnt: ]
+			sequence_length_seg = self.relation_seg_sequence_length_list[self.batch_cnt: ]
+			sequence_length_seg_all = self.relation_seg_all_sequence_length_list[self.batch_cnt: ]
+			sequence_length_question = self.question_sequence_length_list[self.batch_cnt: ]
 
-			gold_case = one_batch[0]
-			gold_relation_seg = gold_case[0]
-			gold_relation_seg_all = gold_case[1]
-			gold_question = gold_case[2]
-			gold_relation_seg_length = gold_case[3]
-			gold_relation_seg_all_length = gold_case[4]
-			gold_question_length = gold_case[5]
+			question_matrix = self.build_calculate_matrix_for_question(self.case_num_list[self.batch_cnt: ])
+			similarity_matrix = self.build_calculate_matrix_for_similarity(self.case_num_list[self.batch_cnt: ])	
 
-			relation_seg.append(gold_relation_seg)
-			relation_seg_all.append(gold_relation_seg_all)
-			question.append(gold_question)
-			sequence_length_seg.append(gold_relation_seg_length)
-			sequence_length_seg_all.append(gold_relation_seg_all_length)
-			sequence_length_question.append(gold_question_length)
-
-			label_sequence.append(-1)
-
-			for neg_case in one_batch[1:]:
-				neg_relation_seg = neg_case[0]
-				neg_relation_seg_all = neg_case[1]
-				neg_question = neg_case[2]
-				neg_realtion_seg_length = neg_case[3]
-				neg_relation_seg_all_length = neg_case[4]
-				neg_question_length = neg_case[5]
-
-				relation_seg.append(neg_relation_seg)
-				relation_seg_all.append(neg_relation_seg_all)
-				question.append(neg_question)
-				sequence_length_seg.append(neg_realtion_seg_length)
-				sequence_length_seg_all.append(neg_relation_seg_all_length)
-				sequence_length_question.append(neg_question_length)
-
-				label_sequence.append(1)
-
-			self.batch_cnt += 1
+			self.batch_cnt = self.total_batch
 
 			return relation_seg, relation_seg_all, question, \
 								sequence_length_seg, sequence_length_seg_all, sequence_length_question, \
-								label_sequence
+								question_matrix, similarity_matrix
+
+	def build_calculate_matrix_for_question(self, case_num):
+		matrix = []
+		for i in range(len(case_num)):
+			vec = [0] * len(case_num)
+			vec[i] = 1
+			matrix.extend([vec] * case_num[i])
+		return np.asarray(matrix)
+
+	def build_calculate_matrix_for_similarity(case_num):
+		matrix = []
+		height = sum(case_num)
+		width = height - len(case_num)
+		for i in range(height):
+			matrix.append([0]*width)
+
+		startpoint = 0
+		for i in range(len(case_num)):
+			for j in range(1, case_num[i]):
+				matrix[startpoint][startpoint-i+j-1] = -1
+				matrix[startpoint+j][startpoint-i+j-1] = 1
+
+			startpoint += case_num[i]
+
+		return np.asarray(matrix)
 
 
 	def data_process(self, data, max_length_dict):
-		new_data = []
+		question_list = []
+		relation_seg_list = []
+		relation_seg_all_list = []
+		question_sequence_length_list = []
+		relation_seg_sequence_length_list = []
+		relation_seg_all_sequence_length_list = []
+		case_num_list = []
+
 		for one_data in data:
 			new_one_data = []
 
 			question = one_data[2]
 
 			gold_relation = one_data[0]
-			gold_relation_seg = gold_relation_seg[0]
-			gold_relation_seg_all = gold_relation_seg[1]
+			gold_relation_seg = gold_relation[0]
+			gold_relation_seg_all = gold_relation[1]
+
+			question_list.append(self.padding(question, max_length_dict['question_max_length']))
+			question_sequence_length_list.append(len(question))
+
+			relation_seg_list.append(self.padding(gold_relation_seg, max_length_dict['seg_max_length']))
+			relation_seg_all_list.append(self.padding(gold_relation_seg_all, max_length_dict['seg_all_max_length']))
+			relation_seg_sequence_length_list.append(len(gold_relation_seg))
+			relation_seg_all_sequence_length_list.append(len(gold_relation_seg_all))
 			
-			gold_case = []
-			gold_case.append(self.padding(gold_relation_seg, max_length_dict['seg_max_length']))
-			gold_case.append(self.padding(gold_relation_seg_all, max_length_dict['seg_all_max_length']))
-			gold_case.append(self.padding(question, max_length_dict['question_max_length']))
-			gold_case.append(len(gold_relation_seg))
-			gold_case.append(len(gold_relation_seg_all))
-			gold_case.append(len(question))
-			
-			new_one_data.append(gold_case)
+
+			case_num_list.append(len(one_data[1]) + 1)
 
 			for neg_data in one_data[1]:
 				neg_relation_seg = neg_data[0]
 				neg_relation_seg_all = neg_data[1]
-				
-				neg_case = []
-				neg_case.append(self.padding(neg_relation_seg, max_length_dict['seg_max_length']))
-				neg_case.append(self.padding(neg_relation_seg_all, max_length_dict['seg_all_max_length']))
-				neg_case.append(self.padding(question, max_length_dict['question_max_length']))
-				neg_case.append(len(neg_relation_seg))
-				neg_case.append(len(neg_relation_seg_all))
-				neg_case.append(len(question))
 
-				new_one_data.append(neg_case)
+				relation_seg_list.append(self.padding(neg_relation_seg, max_length_dict['seg_max_length']))
+				relation_seg_all_list.append(self.padding(neg_relation_seg_all, max_length_dict['seg_all_max_length']))
+				relation_seg_sequence_length_list.append(len(neg_relation_seg))
+				relation_seg_all_sequence_length_list.append(len(neg_relation_seg_all))
 
-			new_data.append(new_one_data)
+		
+		return np.asarray(question_list), np.asarray(relation_seg_list), np.asarray(relation_seg_all_list), \
+				np.asarray(question_sequence_length_list), np.asarray(relation_seg_sequence_length_list), \
+				np.asarray(relation_seg_all_sequence_length_list), case_num_list
 
-		return new_data
+
+
 
 	def padding(self, data, max_length):
 		new_data = []
