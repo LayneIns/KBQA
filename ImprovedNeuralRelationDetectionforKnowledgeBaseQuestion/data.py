@@ -11,7 +11,10 @@ class argConfig():
 		self.word_embedding_size = 300
 		self.question_vocab_size = question_vocab_size
 		self.question_embedding_size = 300
-
+		self.batch_size = 15
+		self.epoch_num = 10
+		self.gamma = 0.1
+		self.learning_rate = 0.5
 
 class dataMgr():
 
@@ -20,44 +23,57 @@ class dataMgr():
 		self.question_list, self.relation_seg_list, self.relation_seg_all_list, \
 			self.question_sequence_length_list, self.relation_seg_sequence_length_list, self.relation_seg_all_sequence_length_list, \
 			self.case_num_list = self.data_process(data, max_length_dict)
+
 		self.total_batch = len(self.question_list)
 		self.batch_cnt = 0
+		self.relation_batch_cnt = 0
 	
 	def initialize_batch_cnt(self):
 		self.batch_cnt = 0
+		self.relation_batch_cnt = 0
 
-	def next_batch(self):
-		if self.batch_cnt <= self.total_batch - 10:
-			question = self.question_list[self.batch_cnt: self.batch_cnt+10]
+	def next_batch(self, batch_size):
+		if self.batch_cnt <= self.total_batch - batch_size:
+			question = self.question_list[self.batch_cnt: self.batch_cnt+batch_size]
 			
-			relation_seg = self.relation_seg_list[self.batch_cnt: self.batch_cnt+10]
-			relation_seg_all = self.relation_seg_all_list[self.batch_cnt: self.batch_cnt+10]
-			sequence_length_seg = self.relation_seg_sequence_length_list[self.batch_cnt: self.batch_cnt+10]
-			sequence_length_seg_all = self.relation_seg_all_sequence_length_list[self.batch_cnt: self.batch_cnt+10]
-			sequence_length_question = self.question_sequence_length_list[self.batch_cnt: self.batch_cnt+10]
+			relation_cnt = 0
+			for i in range(batch_size):
+				relation_cnt += self.case_num_list[self.batch_cnt + i]
+			
+			relation_seg = self.relation_seg_list[self.relation_batch_cnt: self.relation_batch_cnt+relation_cnt]
+			relation_seg_all = self.relation_seg_all_list[self.relation_batch_cnt: self.relation_batch_cnt+relation_cnt]
+			sequence_length_seg = self.relation_seg_sequence_length_list[self.relation_batch_cnt: self.relation_batch_cnt+relation_cnt]
+			sequence_length_seg_all = self.relation_seg_all_sequence_length_list[self.relation_batch_cnt: self.relation_batch_cnt+relation_cnt]
+			sequence_length_question = self.question_sequence_length_list[self.batch_cnt: self.batch_cnt+batch_size]
 
-			question_matrix = self.build_calculate_matrix_for_question(self.case_num_list[self.batch_cnt: self.batch_cnt+10])
-			similarity_matrix = self.build_calculate_matrix_for_similarity(self.case_num_list[self.batch_cnt: self.batch_cnt+10])	
+			question_matrix = self.build_calculate_matrix_for_question(self.case_num_list[self.batch_cnt: self.batch_cnt+batch_size])
+			similarity_matrix = self.build_calculate_matrix_for_similarity(self.case_num_list[self.batch_cnt: self.batch_cnt+batch_size])	
 
-			self.batch_cnt += 10
-		
+			ret_case_list = self.case_num_list[self.batch_cnt: self.batch_cnt+batch_size]
+			
+			self.batch_cnt += batch_size
+			self.relation_batch_cnt += relation_cnt
+
 		else:
 			question = self.question_list[self.batch_cnt: ]
 			
-			relation_seg = self.relation_seg_list[self.batch_cnt: ]
-			relation_seg_all = self.relation_seg_all_list[self.batch_cnt: ]
-			sequence_length_seg = self.relation_seg_sequence_length_list[self.batch_cnt: ]
-			sequence_length_seg_all = self.relation_seg_all_sequence_length_list[self.batch_cnt: ]
+			relation_seg = self.relation_seg_list[self.relation_batch_cnt: ]
+			relation_seg_all = self.relation_seg_all_list[self.relation_batch_cnt: ]
+			sequence_length_seg = self.relation_seg_sequence_length_list[self.relation_batch_cnt: ]
+			sequence_length_seg_all = self.relation_seg_all_sequence_length_list[self.relation_batch_cnt: ]
 			sequence_length_question = self.question_sequence_length_list[self.batch_cnt: ]
 
 			question_matrix = self.build_calculate_matrix_for_question(self.case_num_list[self.batch_cnt: ])
 			similarity_matrix = self.build_calculate_matrix_for_similarity(self.case_num_list[self.batch_cnt: ])	
 
+			ret_case_list = self.case_num_list[self.batch_cnt: ]
 			self.batch_cnt = self.total_batch
+			
+		return relation_seg, relation_seg_all, question, \
+							sequence_length_seg, sequence_length_seg_all, sequence_length_question, \
+							question_matrix, similarity_matrix, ret_case_list
 
-			return relation_seg, relation_seg_all, question, \
-								sequence_length_seg, sequence_length_seg_all, sequence_length_question, \
-								question_matrix, similarity_matrix
+
 
 	def build_calculate_matrix_for_question(self, case_num):
 		matrix = []
@@ -67,7 +83,7 @@ class dataMgr():
 			matrix.extend([vec] * case_num[i])
 		return np.asarray(matrix)
 
-	def build_calculate_matrix_for_similarity(case_num):
+	def build_calculate_matrix_for_similarity(self, case_num):
 		matrix = []
 		height = sum(case_num)
 		width = height - len(case_num)
@@ -124,9 +140,9 @@ class dataMgr():
 				relation_seg_all_sequence_length_list.append(len(neg_relation_seg_all))
 
 		
-		return np.asarray(question_list), np.asarray(relation_seg_list), np.asarray(relation_seg_all_list), \
-				np.asarray(question_sequence_length_list), np.asarray(relation_seg_sequence_length_list), \
-				np.asarray(relation_seg_all_sequence_length_list), case_num_list
+		return np.asarray(question_list, dtype=np.int32), np.asarray(relation_seg_list, dtype=np.int32), np.asarray(relation_seg_all_list, dtype=np.int32), \
+				np.asarray(question_sequence_length_list, dtype=np.int32), np.asarray(relation_seg_sequence_length_list, dtype=np.int32), \
+				np.asarray(relation_seg_all_sequence_length_list, dtype=np.int32), case_num_list
 
 
 
@@ -139,7 +155,7 @@ class dataMgr():
 			else:
 				new_data.append(0)
 
-		return data
+		return new_data
 
 
 def max_length(data):

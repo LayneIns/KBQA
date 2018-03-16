@@ -5,7 +5,9 @@ from utils import readRelations, readData, wordStatForRelation, \
 					wordStatForQuestion, convert_data, \
 					question_words_embedding
 
-from data import data_static
+from data import data_static, argConfig, dataMgr
+
+from train import train_model
 
 
 if __name__ == "__main__":
@@ -54,7 +56,14 @@ if __name__ == "__main__":
 
 	print max_length_dict
 
+	arg_config = argConfig(max_length_dict, len(relation_words), len(question_words))
+	training_data_mgr = dataMgr(training_data_conv, max_length_dict)
+	testing_data_mgr = dataMgr(testing_data_conv, max_length_dict)
+	valid_data_mgr = dataMgr(valid_data_conv, max_length_dict)
 
+	train_model(arg_config, training_data_mgr, testing_data_mgr, valid_data_mgr, word_embedding_matrix)
+
+			
 
 	
 
