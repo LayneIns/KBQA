@@ -5,7 +5,7 @@ import numpy as np
 
 class argConfig():
 	def __init__(self, max_length_dict, relation_vocab_size, question_vocab_size):
-		self.relation_embedding_size = 150
+		self.relation_embedding_size = 300
 		self.max_length_dict = max_length_dict
 		self.relation_vocab_size = relation_vocab_size
 		self.word_embedding_size = 300
@@ -15,6 +15,8 @@ class argConfig():
 		self.epoch_num = 10
 		self.gamma = 0.1
 		self.learning_rate = 0.5
+		self.relation_ksize = [1, max_length_dict['seg_max_length'] + max_length_dict['seg_all_max_length'], 1, 1]
+		self.question_ksize = [1, max_length_dict['question_max_length'], 1, 1]
 
 class dataMgr():
 
@@ -68,7 +70,7 @@ class dataMgr():
 
 			ret_case_list = self.case_num_list[self.batch_cnt: ]
 			self.batch_cnt = self.total_batch
-			
+
 		return relation_seg, relation_seg_all, question, \
 							sequence_length_seg, sequence_length_seg_all, sequence_length_question, \
 							question_matrix, similarity_matrix, ret_case_list

@@ -22,13 +22,14 @@ def train_model(arg_config, training_data_mgr, testing_data_mgr, valid_data_mgr,
 						sequence_length_seg, sequence_length_seg_all, sequence_length_question, \
 						question_matrix, similarity_matrix, case_num_list = training_data_mgr.next_batch(arg_config.batch_size)
 				
-				_, loss = sess.run([model.train_op, model.loss], \
+				_, loss, repre = sess.run([model.train_op, model.loss, model.relation_repre], \
 					feed_dict={model.relation_seg_input: relation_seg, model.relation_seg_all_input: relation_seg_all, \
 								model.question_input: question, model.sequence_length_seg: sequence_length_seg, \
 								model.sequence_length_seg_all: sequence_length_seg_all, model.sequence_length_question: sequence_length_question, \
 								model.question_embedding_matrix: word_embedding_matrix, model.question_matrix: question_matrix, \
 								model.similarity_matrix: similarity_matrix})
-
+				# print repre
+				# raw_input()
 				if j % (arg_config.batch_size * 10) == 0:
 					print "training --- epoch number:", str(i), ", step:", str(j), ", loss:", str(loss)
 
@@ -48,6 +49,9 @@ def train_model(arg_config, training_data_mgr, testing_data_mgr, valid_data_mgr,
 										model.similarity_matrix: similarity_matrix})
 						total_case += len(case_num_list)
 						temp_cnt = 0
+						print "k:", k
+						print cos_similarity
+						raw_input()
 
 						for l in range(len(case_num_list)):
 							mid_sim = cos_similarity[temp_cnt: temp_cnt + case_num_list[l]]
