@@ -108,10 +108,13 @@ def wordStatForRelation(relation_list_seg, relation_list_seg_all, training_data)
 				if word_dict.get(word, -1) == -1:
 					word_dict[word] = len(word_dict)
 	
-	print "There are", len(word_dict), "words in "
+	print "There are", len(word_dict), "words in all relations."
 	return word_dict
 	
 
+# Convert the words in the relations(seg or not seg) and questions into their indexes
+# Return a list new_data, each element of new_data is a list [gold_relation, neg_relation, question]
+# Noticing that the neg_relation here is a list because there might be several candidate negative relations
 def convert_data(question_words, relation_words, relation_list_seg, relation_list_seg_all, data):
 	new_data = []
 	data_cnt = 0
@@ -132,7 +135,7 @@ def convert_data(question_words, relation_words, relation_list_seg, relation_lis
 		
 		new_gold_relation_seg = []
 		for word in gold_relation_seg:
-			new_gold_relation_seg.append(relation_words.get(word, relation_words.get("#UNK"))
+			new_gold_relation_seg.append(relation_words.get(word, relation_words.get("#UNK")))
 		new_gold_relation_seg_all = []
 		for word in gold_relation_seg_all:
 			new_gold_relation_seg_all.append(relation_words.get(word, relation_words.get("#UNK#")))
@@ -150,10 +153,22 @@ def convert_data(question_words, relation_words, relation_list_seg, relation_lis
 			new_one_neg_relation_seg_all = []
 			for word in one_neg_relation_seg_all:
 				new_one_neg_relation_seg_all.append(relation_words.get(word, relation_words.get("#UNK#")))
-			new_neg_relation.append()
+			new_neg_relation.append([new_one_neg_relation_seg, new_one_neg_relation_seg_all])
+		
+		new_one_data.append(new_neg_relation)
+		
+		new_question = []
+		for word in question:
+			new_question.append(question_words.get(word, question_words.get("#UNK#")))
+		
+		new_one_data.append(new_question)
+		
+		new_data.append(new_one_data)
+	
+	return new_data
 
 		
-	
+
 	
 	
 	
