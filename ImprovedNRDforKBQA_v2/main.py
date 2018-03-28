@@ -51,6 +51,9 @@ if __name__ == "__main__":
 	print "valid_data_mgr: total_batch:", valid_data_mgr.total_batch
 	print "\n"
 	
+	print "Start to train..."
+	train_model(arg_config, training_data_mgr, testing_data_mgr, valid_data_mgr)
+	
 	
 	
 	

@@ -22,10 +22,9 @@ class argConfig:
 		self.gamma = 0.1
 		self.learning_rate = 0.5
 		
-		'''
 		self.relation_ksize = [1, max_length_dict['seg_max_length'] + max_length_dict['seg_all_max_length'], 1, 1]
 		self.question_ksize = [1, max_length_dict['question_max_length'], 1, 1]
-		'''
+		
 
 
 class dataMgr:
@@ -56,18 +55,37 @@ class dataMgr:
 			seg_sequence_list.extend(one_sequence_length[0])
 			seg_all_sequence_list.extend(one_sequence_length[1])
 			question_sequence_list.extend(one_sequence_length[2])
-			
-		return np.asarray(relation_seg, dtype=np.int32), np.asarray(relation_seg_all, dtype=np.int32), np.asarray(question_data, dtype=np.int32), np.asarray(seg_sequence_list, dtype=np.int64), np.asarray(seg_all_sequence_list, dtype=np.int64), np.asarray(question_sequence_list, dtype=np.int64)
+		
+		for i in range(len(relation_seg)):
+			for j in range(len(relation_seg[i])):
+				if relation_seg[i][j] == None:
+					relation_seg[i][j] = 0
+		'''
+		print relation_seg
+		print np.asarray(relation_seg, dtype=np.int32)
+		print relation_seg_all
+		print np.asarray(relation_seg_all, dtype=np.int32)
+		print question_data
+		print np.asarray(question_data, dtype=np.int32)
+		print seg_sequence_list
+		print np.asarray(seg_sequence_list, dtype=np.int32)
+		print seg_all_sequence_list
+		print np.asarray(seg_all_sequence_list, dtype=np.int32)
+		print question_sequence_list
+		print np.asarray(question_sequence_list, dtype=np.int32)
+		'''
+		return np.asarray(relation_seg, dtype=np.int32), np.asarray(relation_seg_all, dtype=np.int32), np.asarray(question_data, dtype=np.int32), np.asarray(seg_sequence_list, dtype=np.int32), np.asarray(seg_all_sequence_list, dtype=np.int32), np.asarray(question_sequence_list, dtype=np.int32)
 		
 	
 	def next_batch(self, batch_size):
-		print "Batch_cnt:", self.batch_cnt
+		# print self.batch_cnt
 		if self.batch_cnt <= self.total_batch - batch_size:
 			ret_data = self.padding_data[self.batch_cnt: self.batch_cnt + batch_size]
 			ret_case_num = self.case_num_list[self.batch_cnt: self.batch_cnt + batch_size]
 			ret_sequence_length = self.sequence_list[self.batch_cnt: self.batch_cnt + batch_size]
 			
 			relation_seg, relation_seg_all, question, seg_sequence_list, seg_all_sequence_list, question_sequence_list = self.build_data(ret_data, ret_sequence_length)
+			cal_matrix = self.build_matrix(ret_case_num)
 			self.batch_cnt += batch_size
 		elif self.batch_cnt < self.total_batch:
 			ret_data = self.padding_data[self.batch_cnt: ]
@@ -75,11 +93,41 @@ class dataMgr:
 			ret_sequence_length = self.sequence_list[self.batch_cnt: ]
 			
 			relation_seg, relation_seg_all, question, seg_sequence_list, seg_all_sequence_list, question_sequence_list = self.build_data(ret_data, ret_sequence_length)
+			cal_matrix = self.build_matrix(ret_case_num)
 			self.batch_cnt = self.total_batch
 		else:
-			return None, None, None, None, None, None
+			return [], [], [], [], [], [], [], []
 		
-		return relation_seg, relation_seg_all, question, seg_sequence_list, seg_all_sequence_list, question_sequence_list
+		return relation_seg, relation_seg_all, question, seg_sequence_list, seg_all_sequence_list, question_sequence_list, ret_case_num, cal_matrix
+	
+	def build_matrix(self, case_num_list):
+		matrix = []
+		rows = sum(case_num_list) - len(case_num_list) + case_num_list.count(1)
+		for i in range(rows):
+			vec = [0] * sum(case_num_list)
+			matrix.append(vec)
+			
+		row_point = [0]
+		col_point = [0]
+		for i in range(0, len(case_num_list) - 1):
+			if case_num_list[i] != 1:
+				row_point.append(row_point[i] + case_num_list[i])
+				col_point.append(col_point[i] + case_num_list[i] - 1)
+			else:
+				row_point.append(row_point[i] + case_num_list[i])
+				col_point.append(col_point[i] + case_num_list[i])
+		
+		for i in range(len(case_num_list)):
+			if case_num_list[i] != 1:
+				for j in range(case_num_list[i] - 1):
+					matrix[col_point[i] + j][row_point[i]] = -1
+					matrix[col_point[i] + j][row_point[i] + j + 1] = 1
+			else:
+				matrix[col_point[i]][row_point[i]] = -1
+				
+		return np.asarray(matrix, dtype=np.float32)
+			
+			
 		
 	def data_process(self, data, max_length_dict):
 		padding_data = []
@@ -121,7 +169,7 @@ class dataMgr:
 			
 			question = self.padding(one_data[2], max_length_dict['question_max_length'])
 			for i in range(len(seg_data)):
-				question_sequence_length.append(len(question))
+				question_sequence_length.append(len(one_data[2]))
 				question_list.append(question)
 			
 			new_one_data = [seg_data, seg_all_data, question_list]
