@@ -17,7 +17,6 @@ def train_model(arg_config, training_data_mgr, testing_data_mgr, valid_data_mgr)
 
 		sess.run(tf.global_variables_initializer())
 		
-		sess.run(model.init)
 		for i in range(arg_config.epoch_num):
 			training_data_mgr.initialize_batch_cnt()
 			batch_number = 0
@@ -71,11 +70,12 @@ def train_model(arg_config, training_data_mgr, testing_data_mgr, valid_data_mgr)
 						for j in range(len(ret_case_num)):
 							flag = True
 							for k in range(1, ret_case_num[j]):
-								if cosine_similarity[start_point[j]] < cosine_similarity[start_point[j] + k]:
+								if cosine_similarity[start_point[j]] <= cosine_similarity[start_point[j] + k]:
 									flag = False
 									break
 							if flag:
 								right_batch_number += 1
+						
 					print "Validation:"
 					print "Total case number:", total_case_number, ", right case number:", right_case_number, ", ratio:", float(right_case_number)/total_case_number
 					print "Total batch number:", total_batch_number, ", right batch_number:", right_batch_number, ", ratio:", float(right_batch_number)/total_batch_number

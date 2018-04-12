@@ -35,7 +35,7 @@ def readRelations(datapath):
 # Get all the data for training, testing and validating
 # Return a list data_list, and each element in that list is a list formed as [gold_relation, negative_relation, question], 
 # here, gold_relation is a number, negative_relation is a list composing of the numbers of the negative samples, and question is a list composing of the words of the sentence
-def readData(datapath):
+def readData(datapath, train=True):
 	data_list = []
 	with open(datapath) as fin:
 		for line in fin:
@@ -50,6 +50,8 @@ def readData(datapath):
 				neg_relation = []
 			else:
 				neg_relation = [int(num) for num in one_data[1].split()]
+			if train == False:
+				neg_relation.remove(gold_relation)
 			question = one_data[2].split()
 			one_data = []
 			one_data.append(gold_relation)

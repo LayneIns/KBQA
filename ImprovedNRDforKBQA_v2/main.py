@@ -16,9 +16,9 @@ if __name__ == "__main__":
 	print "Start to read training data..."
 	training_data = readData("KBQA_data/sq_relations/train.replace_ne.withpool")
 	print "Start to read testing data..."
-	testing_data = readData("KBQA_data/sq_relations/test.replace_ne.withpool")
+	testing_data = readData("KBQA_data/sq_relations/test.replace_ne.withpool", False)
 	print "Start to read validation data"
-	valid_data = readData("KBQA_data/sq_relations/valid.replace_ne.withpool")
+	valid_data = readData("KBQA_data/sq_relations/valid.replace_ne.withpool", False)
 	print "\n"
 	
 	print "start to get word dictionary for questions and relations"
