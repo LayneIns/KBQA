@@ -17,10 +17,10 @@ class argConfig:
 		
 		self.max_length_dict = max_length_dict
 		
-		self.batch_size = 15
+		self.batch_size = 10
 		self.epoch_num = 10
 		self.gamma = 0.1
-		self.learning_rate = 0.5
+		self.learning_rate = 0.25
 		
 		self.relation_ksize = [1, max_length_dict['seg_max_length'] + max_length_dict['seg_all_max_length'], 1, 1]
 		self.question_ksize = [1, max_length_dict['question_max_length'], 1, 1]

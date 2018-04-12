@@ -81,10 +81,10 @@ class HrbilstmModel:
 		self.hinge_loss = tf.maximum(0.0, tf.add(arg_config.gamma, self.sub_res_squeeze))
 		self.loss = tf.reduce_sum(self.hinge_loss)
 		
-		self.optimizer = tf.train.AdamOptimizer(learning_rate=arg_config.learning_rate)
-		self.train_op = self.optimizer.minimize(self.loss)		
+		# self.optimizer = tf.train.AdamOptimizer(learning_rate=arg_config.learning_rate)
+		# self.train_op = self.optimizer.minimize(self.loss)		
 		
-		self.init = tf.global_variables_initializer()
+		# self.init = tf.global_variables_initializer()
 
 	
 	def calculate_cosine_similarity(self, relation, question):

@@ -9,6 +9,13 @@ def train_model(arg_config, training_data_mgr, testing_data_mgr, valid_data_mgr)
 	saver = tf.train.Saver(max_to_keep=1)
 	
 	with tf.Session() as sess:
+
+		global_step = tf.Variable(0, name="global_step", trainable=False)
+		optimizer = tf.train.AdamOptimizer(1e-3)
+		grads_and_vars = optimizer.compute_gradients(model.loss)
+		train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
+
+		sess.run(tf.global_variables_initializer())
 		
 		sess.run(model.init)
 		for i in range(arg_config.epoch_num):
@@ -22,7 +29,7 @@ def train_model(arg_config, training_data_mgr, testing_data_mgr, valid_data_mgr)
 					break
 				
 				
-				_, loss = sess.run([model.train_op, model.loss], feed_dict={model.relation_seg_input: relation_seg, model.relation_seg_all_input: relation_seg_all, model.question_input: question, model.seg_sequence_length: seg_sequence_list, model.seg_all_sequence_length: seg_all_sequence_list, model.question_sequence_length: question_sequence_list, model.cal_matrix: cal_matrix})
+				_, loss = sess.run([train_op, model.loss], feed_dict={model.relation_seg_input: relation_seg, model.relation_seg_all_input: relation_seg_all, model.question_input: question, model.seg_sequence_length: seg_sequence_list, model.seg_all_sequence_length: seg_all_sequence_list, model.question_sequence_length: question_sequence_list, model.cal_matrix: cal_matrix})
 				
 				if batch_number % 10 == 0:
 					cosine_similarity, sub_res = sess.run([model.cosine_similarity, model.sub_res_squeeze], feed_dict={model.relation_seg_input: relation_seg, model.relation_seg_all_input: relation_seg_all, model.question_input: question, model.seg_sequence_length: seg_sequence_list, model.seg_all_sequence_length: seg_all_sequence_list, model.question_sequence_length: question_sequence_list, model.cal_matrix: cal_matrix})
